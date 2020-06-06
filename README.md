@@ -23,3 +23,6 @@ while (true) {
     })
 }
 ```
+
+
+Big thanks to Nathan Rajlich and his https://github.com/TooTallNate/keypress, whitch code for key decode I took to this library.
