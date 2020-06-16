@@ -1,4 +1,4 @@
-import {decode} from "./dep.ts";
+import {decode, encode} from "./dep.ts";
 
 interface IEvent {
     type: string,
@@ -34,7 +34,7 @@ const metaKeyCodeRe = /^(?:\x1b)([a-zA-Z0-9])$/;
 const functionKeyCodeRe =
     /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/;
 
-export async function keypress(message: Uint8Array): Promise<IEvent[]> {
+export function decodeKeypress(message: Uint8Array): IEvent[] {
     let parts;
 
     let sequence = decode(message);
@@ -377,12 +377,13 @@ export async function keypress(message: Uint8Array): Promise<IEvent[]> {
     } else if (sequence.length > 1 && sequence[0] !== '\x1b') {
         // Got a longer-than-one string of characters.
         // Probably a paste, since it wasn't a control sequence.
-        const results: Promise<IEvent>[] = Array.prototype.map.call(sequence, keypress) as Promise<IEvent>[];
+        const results: IEvent[][] = sequence.split('')
+            .map(character => decodeKeypress(encode(character)));
 
-        return Promise.all(results);
+        return results.flat();
     }
 
-    return Promise.resolve([event]);
+    return [event];
 }
 
 export async function readKeypress(bufferLength: number = 1024): Promise<IEvent[]> {
@@ -391,5 +392,20 @@ export async function readKeypress(bufferLength: number = 1024): Promise<IEvent[
     const length = <number>await Deno.stdin.read(buffer);
     Deno.setRaw(0, false);
 
-    return await keypress(buffer.subarray(0, length));
+    return decodeKeypress(buffer.subarray(0, length));
+}
+
+export async function* keypress(bufferLength: number = 1024): AsyncIterableIterator<IEvent> {
+    while (true) {
+        const buffer = new Uint8Array(bufferLength);
+        Deno.setRaw(Deno.stdin.rid, true);
+        const length = <number>await Deno.stdin.read(buffer);
+        Deno.setRaw(Deno.stdin.rid, false);
+
+        const events = decodeKeypress(buffer.subarray(0, length));
+
+        for (const event of events) {
+            yield event;
+        }
+    }
 }
