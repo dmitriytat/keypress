@@ -4,11 +4,11 @@ Reads key from stdin.
 
 ### Try
 
-```deno run --unstable keypress_test.ts```
+```deno run --unstable https://raw.githubusercontent.com/dmitriytat/keypress/master/readKeypress_test.ts```
 
 ```ts
-// CTRL + C event
-const event: IEvent = {
+// CTRL + C keypress
+const keypress: Keypress = {
   type: "keypress",
   key: "c",
   code: undefined,
@@ -23,31 +23,34 @@ const event: IEvent = {
 
 ### Usage
 
+Read from Deno.stdin by default:
+
 ```ts
-import { keypress, readKeypress } from "./mod.ts";
+import { readKeypress } from "./mod.ts";
 
-for await (const event of keypress()) {
-    console.log(event);
+for await (const keypress of readKeypress()) {
+    console.log(keypress);
 
-    if (event.ctrlKey && event.key === 'c') {
+    if (keypress.ctrlKey && keypress.key === 'c') {
         Deno.exit(0);
     }
 }
-
-// or
-
-while (true) {
-    const events = await readKeypress();
-
-    events.forEach(event => {
-        console.log(event);
-
-        if (event.ctrlKey && event.key === 'c') {
-            Deno.exit(0);
-        }
-    })
-}
 ```
 
+Read from TTY:
+
+```ts
+import { readKeypress } from "./mod.ts";
+
+const tty = await Deno.open("/dev/ttys003");
+
+for await (const keypress of readKeypress(tty)) {
+    console.log(keypress);
+
+    if (keypress.ctrlKey && keypress.key === 'c') {
+        Deno.exit(0);
+    }
+}
+```
 
 Big thanks to Nathan Rajlich and his https://github.com/TooTallNate/keypress, whitch code for key decode I took to this library.

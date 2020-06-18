@@ -1,6 +1,6 @@
 import {decode, encode} from "./dep.ts";
 
-interface IEvent {
+export interface Keypress {
     type: string,
     key: string | undefined,
     code: string | undefined,
@@ -12,7 +12,11 @@ interface IEvent {
     shiftKey: boolean,
 }
 
-function toUnicode(str: string) {
+/**
+ * Get unicode characters sequence
+ * @param str
+ */
+export function toUnicode(str: string) {
     let result = '';
 
     for (let i = 0; i < str.length; i++) {
@@ -34,11 +38,17 @@ const metaKeyCodeRe = /^(?:\x1b)([a-zA-Z0-9])$/;
 const functionKeyCodeRe =
     /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/;
 
-export function decodeKeypress(message: Uint8Array): IEvent[] {
+const charsRe = /^[A-zА-яЁё]$/;
+
+/**
+ * Decode control sequence
+ * @param message
+ */
+export function decodeKeypress(message: Uint8Array): Keypress[] {
     let parts;
 
     let sequence = decode(message);
-    let event: IEvent = {
+    let event: Keypress = {
         type: 'keypress',
         key: undefined,
         code: undefined,
@@ -87,15 +97,10 @@ export function decodeKeypress(message: Uint8Array): IEvent[] {
         event.key = String.fromCharCode(sequence.charCodeAt(0) + 'a'.charCodeAt(0) - 1);
         event.ctrlKey = true;
 
-    } else if (sequence.length === 1 && (sequence >= 'a' && sequence <= 'z')) {
-        // lowercase letter
+    } else if (sequence.length === 1 && charsRe.test(sequence)) {
+        // letter
         event.key = sequence;
-
-    } else if (sequence.length === 1 && sequence >= 'A' && sequence <= 'Z') {
-        // shiftKey+letter
-        event.key = sequence.toLowerCase();
-        event.shiftKey = true;
-
+        event.shiftKey = sequence !== sequence.toLowerCase() && sequence === sequence.toUpperCase();
     } else if (parts = metaKeyCodeRe.exec(sequence)) {
         // metaKey+character key
         event.key = parts[1].toLowerCase();
@@ -377,7 +382,7 @@ export function decodeKeypress(message: Uint8Array): IEvent[] {
     } else if (sequence.length > 1 && sequence[0] !== '\x1b') {
         // Got a longer-than-one string of characters.
         // Probably a paste, since it wasn't a control sequence.
-        const results: IEvent[][] = sequence.split('')
+        const results: Keypress[][] = sequence.split('')
             .map(character => decodeKeypress(encode(character)));
 
         return results.flat();
@@ -386,21 +391,21 @@ export function decodeKeypress(message: Uint8Array): IEvent[] {
     return [event];
 }
 
-export async function readKeypress(bufferLength: number = 1024): Promise<IEvent[]> {
-    const buffer = new Uint8Array(bufferLength);
-    Deno.setRaw(0, true);
-    const length = <number>await Deno.stdin.read(buffer);
-    Deno.setRaw(0, false);
+/**
+ * Read character sequence and decode it as keypress
+ * @param reader - TTY reader
+ * @param bufferLength - used because of opportunity to paste text in terminal
+ */
+export async function* readKeypress(reader: Deno.Reader & { rid: number } = Deno.stdin, bufferLength: number = 1024): AsyncIterableIterator<Keypress> {
+    if (!Deno.isatty(reader.rid)) {
+        throw new Error('Keypress can be read only under TTY.')
+    }
 
-    return decodeKeypress(buffer.subarray(0, length));
-}
-
-export async function* keypress(bufferLength: number = 1024): AsyncIterableIterator<IEvent> {
     while (true) {
         const buffer = new Uint8Array(bufferLength);
-        Deno.setRaw(Deno.stdin.rid, true);
-        const length = <number>await Deno.stdin.read(buffer);
-        Deno.setRaw(Deno.stdin.rid, false);
+        Deno.setRaw(reader.rid, true);
+        const length = <number>await reader.read(buffer);
+        Deno.setRaw(reader.rid, false);
 
         const events = decodeKeypress(buffer.subarray(0, length));
 

@@ -1,13 +1,9 @@
-import {readKeypress} from "./mod.ts";
+import { readKeypress } from "./mod.ts";
 
-while (true) {
-    const events = await readKeypress();
+for await (const keypress of readKeypress()) {
+    console.log(keypress);
 
-    events.forEach(event => {
-        console.log(event);
-
-        if (event.ctrlKey && event.key === 'c') {
-            Deno.exit(0);
-        }
-    })
+    if (keypress.ctrlKey && keypress.key === 'c') {
+        Deno.exit(0);
+    }
 }
