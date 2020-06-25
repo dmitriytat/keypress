@@ -1,7 +1,6 @@
 import {decode, encode} from "./dep.ts";
 
 export interface Keypress {
-    type: string,
     key: string | undefined,
     code: string | undefined,
     keyCode: number | undefined,
@@ -49,7 +48,6 @@ export function decodeKeypress(message: Uint8Array): Keypress[] {
 
     let sequence = decode(message);
     let event: Keypress = {
-        type: 'keypress',
         key: undefined,
         code: undefined,
         keyCode: undefined,
