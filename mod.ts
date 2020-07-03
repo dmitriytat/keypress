@@ -390,16 +390,27 @@ export function decodeKeypress(message: Uint8Array): Keypress[] {
 }
 
 /**
+ * default exit function
+ * 
+ * @param event event
+ */
+export function defaultExit(event: Keypress): boolean {
+    return event.ctrlKey && event.key === 'c';
+}
+
+/**
  * Read character sequence and decode it as keypress
+ * @param exitWhen - function returns when to exits
  * @param reader - TTY reader
  * @param bufferLength - used because of opportunity to paste text in terminal
  */
-export async function* readKeypress(reader: Deno.Reader & { rid: number } = Deno.stdin, bufferLength: number = 1024): AsyncIterableIterator<Keypress> {
+export async function* readKeypress(exitWhen: (event: Keypress) => boolean = defaultExit, reader: Deno.Reader & { rid: number } = Deno.stdin, bufferLength: number = 1024): AsyncIterableIterator<Keypress> {
     if (!Deno.isatty(reader.rid)) {
         throw new Error('Keypress can be read only under TTY.')
     }
 
-    while (true) {
+    let keepRunning: boolean = true;
+    while (keepRunning) {
         const buffer = new Uint8Array(bufferLength);
         Deno.setRaw(reader.rid, true);
         const length = <number>await reader.read(buffer);
@@ -409,6 +420,9 @@ export async function* readKeypress(reader: Deno.Reader & { rid: number } = Deno
 
         for (const event of events) {
             yield event;
+            if (keepRunning && exitWhen(event)) { // Add check to continue or exit.
+                keepRunning = false;
+            }
         }
     }
 }
