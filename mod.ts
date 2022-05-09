@@ -1,5 +1,3 @@
-import {decode, encode} from "./dep.ts";
-
 export interface Keypress {
     key: string | undefined,
     code: string | undefined,
@@ -46,7 +44,7 @@ const charsRe = /^[A-zА-яЁё]$/;
 export function decodeKeypress(message: Uint8Array): Keypress[] {
     let parts;
 
-    let sequence = decode(message);
+    let sequence = new TextDecoder().decode(message);
     let event: Keypress = {
         key: undefined,
         code: undefined,
@@ -380,8 +378,9 @@ export function decodeKeypress(message: Uint8Array): Keypress[] {
     } else if (sequence.length > 1 && sequence[0] !== '\x1b') {
         // Got a longer-than-one string of characters.
         // Probably a paste, since it wasn't a control sequence.
+        const encoder = new TextEncoder();
         const results: Keypress[][] = sequence.split('')
-            .map(character => decodeKeypress(encode(character)));
+            .map(character => decodeKeypress(encoder.encode(character)));
 
         return results.flat();
     }
