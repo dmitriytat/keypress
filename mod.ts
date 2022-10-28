@@ -400,9 +400,9 @@ export async function* readKeypress(reader: Deno.Reader & { rid: number } = Deno
 
     while (true) {
         const buffer = new Uint8Array(bufferLength);
-        Deno.setRaw(reader.rid, true);
+        Deno.stdin.setRaw(reader.rid, true);
         const length = <number>await reader.read(buffer);
-        Deno.setRaw(reader.rid, false);
+        Deno.stdin.setRaw(reader.rid, false);
 
         const events = decodeKeypress(buffer.subarray(0, length));
 
