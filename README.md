@@ -4,7 +4,7 @@ Reads key from stdin.
 
 ### Try
 
-```deno run --unstable https://deno.land/x/keypress@0.0.9/readKeypress_test.ts```
+```deno run https://deno.land/x/keypress@0.0.9/readKeypress_test.ts```
 
 ```ts
 // CTRL + C keypress
