@@ -4,7 +4,7 @@ Reads key from stdin.
 
 ### Try
 
-```deno run https://deno.land/x/keypress@0.0.9/readKeypress_test.ts```
+```deno run https://deno.land/x/keypress@0.0.10/readKeypress_test.ts```
 
 ```ts
 // CTRL + C keypress
@@ -25,7 +25,7 @@ const keypress: Keypress = {
 Read from Deno.stdin by default:
 
 ```ts
-import { readKeypress } from "https://deno.land/x/keypress@0.0.9/mod.ts";
+import { readKeypress } from "https://deno.land/x/keypress@0.0.10/mod.ts";
 
 for await (const keypress of readKeypress()) {
     console.log(keypress);
@@ -36,14 +36,27 @@ for await (const keypress of readKeypress()) {
 }
 ```
 
-Read from TTY:
+### New options object
+
 
 ```ts
-import { readKeypress } from "https://deno.land/x/keypress@0.0.9/mod.ts";
+import { readKeypress } from "https://deno.land/x/keypress@0.0.10/mod.ts";
 
-const tty = await Deno.open("/dev/ttys003");
+export const options: KeypressOptions = {
+    /**
+     * Buffer size
+     */
+    bufferLength: 1024,
+    /**
+     * The `cbreak` option can be used to indicate that characters that
+     * correspond to a signal should still be generated. When disabling raw
+     * mode, this option is ignored. This functionality currently only works on
+     * Linux and Mac OS.
+     */
+    cbreak: false
+}
 
-for await (const keypress of readKeypress(tty)) {
+for await (const keypress of readKeypress(Deno.stdin, options)) {
     console.log(keypress);
 
     if (keypress.ctrlKey && keypress.key === 'c') {
