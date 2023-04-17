@@ -426,3 +426,32 @@ export async function* readKeypress(reader: typeof Deno.stdin = Deno.stdin, opti
         }
     }
 }
+
+/**
+ * Read character sequence and decode it as keypress sync
+ * @param reader - TTY reader
+ * @param bufferLength - used because of opportunity to paste text in terminal
+ */
+export function* readKeypressSync(reader: typeof Deno.stdin = Deno.stdin, options: Partial<KeypressOptions> = {}): IterableIterator<Keypress> {
+    if (!Deno.isatty(reader.rid)) {
+        throw new Error('Keypress can be read only under TTY.')
+    }
+
+    const opts = {
+        ...defaultOptions,
+        ...options
+    }
+
+    while (true) {
+        const buffer = new Uint8Array(opts.bufferLength);
+        reader.setRaw(true, { cbreak: opts.cbreak });
+        const length = <number> reader.readSync(buffer);
+        reader.setRaw(false);
+
+        const events = decodeKeypress(buffer.subarray(0, length));
+
+        for (const event of events) {
+            yield event;
+        }
+    }
+}
