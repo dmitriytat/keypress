@@ -4,7 +4,7 @@ Reads key from stdin.
 
 ### Try
 
-```deno run https://deno.land/x/keypress@0.0.10/readKeypress_test.ts```
+```deno run https://deno.land/x/keypress@0.0.11/readKeypress_test.ts```
 
 ```ts
 // CTRL + C keypress
@@ -25,7 +25,7 @@ const keypress: Keypress = {
 Read from Deno.stdin by default:
 
 ```ts
-import { readKeypress } from "https://deno.land/x/keypress@0.0.10/mod.ts";
+import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 
 for await (const keypress of readKeypress()) {
     console.log(keypress);
@@ -36,11 +36,25 @@ for await (const keypress of readKeypress()) {
 }
 ```
 
-### New options object
+You also can use sync function
+
+```ts
+import { readKeypressSync } from "https://deno.land/x/keypress@0.0.11/mod.ts";
+
+for (const keypress of readKeypressSync()) {
+    console.log(keypress);
+
+    if (keypress.ctrlKey && keypress.key === 'c') {
+        Deno.exit(0);
+    }
+}
+```
+
+### Options object
 
 
 ```ts
-import { readKeypress } from "https://deno.land/x/keypress@0.0.10/mod.ts";
+import { readKeypress } from "https://deno.land/x/keypress@0.0.11/mod.ts";
 
 export const options: KeypressOptions = {
     /**
